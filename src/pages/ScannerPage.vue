@@ -15,10 +15,22 @@
         </label>
         <label class="field">
           <span>TTL（秒）</span>
-          <input class="input" type="number" min="10" max="3600" step="10" v-model.number="ttl" :disabled="channelCreated" />
+          <input
+            class="input"
+            type="number"
+            min="10"
+            max="3600"
+            step="10"
+            v-model.number="ttl"
+            :disabled="channelCreated"
+          />
         </label>
-        <button class="button" @click="createChannel" :disabled="loading || channelCreated">
-          {{ channelCreated ? '频道已创建' : loading ? '创建中…' : '创建频道' }}
+        <button
+          class="button"
+          @click="createChannel"
+          :disabled="loading || channelCreated"
+        >
+          {{ channelCreated ? "频道已创建" : loading ? "创建中…" : "创建频道" }}
         </button>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
@@ -46,7 +58,12 @@
       <div class="share-box">
         <label>接收者链接</label>
         <div class="share-link">
-          <input class="input" readonly :value="receiverLink" @focus="$event.target.select()" />
+          <input
+            class="input"
+            readonly
+            :value="receiverLink"
+            @focus="$event.target.select()"
+          />
           <button class="button" @click="copyLink" type="button">复制链接</button>
         </div>
         <p class="hint">分享给接收者，接收者无需密钥即可轮询数据。</p>
@@ -64,15 +81,15 @@
           <ul class="status-list">
             <li>
               <span class="status-label">最新扫描</span>
-              <span class="status-value">{{ lastScanned || '尚未识别' }}</span>
+              <span class="status-value">{{ lastScanned || "尚未识别" }}</span>
             </li>
             <li>
               <span class="status-label">已推送数据</span>
-              <span class="status-value">{{ lastPushed || '尚未推送' }}</span>
+              <span class="status-value">{{ lastPushed || "尚未推送" }}</span>
             </li>
             <li>
               <span class="status-label">版本号</span>
-              <span class="status-value">{{ version ?? '未返回' }}</span>
+              <span class="status-value">{{ version ?? "未返回" }}</span>
             </li>
           </ul>
           <p class="status-message" :class="statusState">{{ statusMessage }}</p>
@@ -83,18 +100,19 @@
 </template>
 
 <script setup>
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/browser';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { BrowserMultiFormatReader } from "@zxing/browser";
+import { NotFoundException } from "@zxing/library";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
-const mode = ref('raw');
+const mode = ref("raw");
 const ttl = ref(180);
 const channel = ref(null);
 const loading = ref(false);
-const error = ref('');
-const statusMessage = ref('准备就绪');
-const statusState = ref('info');
-const lastScanned = ref('');
-const lastPushed = ref('');
+const error = ref("");
+const statusMessage = ref("准备就绪");
+const statusState = ref("info");
+const lastScanned = ref("");
+const lastPushed = ref("");
 const version = ref(null);
 const cameraReady = ref(false);
 const scanning = ref(false);
@@ -103,29 +121,29 @@ let controls = null;
 let currentStream = null;
 const reader = new BrowserMultiFormatReader();
 
-const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const apiBase = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
 const channelCreated = computed(() => Boolean(channel.value));
 
 const receiverLink = computed(() => {
-  if (!channel.value || typeof window === 'undefined') return '';
-  const url = new URL(window.location.origin + '/receiver');
-  url.searchParams.set('id', channel.value.id);
+  if (!channel.value || typeof window === "undefined") return "";
+  const url = new URL(window.location.origin + "/receiver");
+  url.searchParams.set("id", channel.value.id);
   return url.toString();
 });
 
 const previewHint = computed(() => {
-  if (!channel.value) return '创建频道以启动摄像头';
-  if (!cameraReady.value) return '等待摄像头授权…';
-  return '扫描二维码以自动推送数据';
+  if (!channel.value) return "创建频道以启动摄像头";
+  if (!cameraReady.value) return "等待摄像头授权…";
+  return "扫描二维码以自动推送数据";
 });
 
 const resetStatus = () => {
-  statusMessage.value = '准备就绪';
-  statusState.value = 'info';
+  statusMessage.value = "准备就绪";
+  statusState.value = "info";
 };
 
-const setStatus = (message, state = 'info') => {
+const setStatus = (message, state = "info") => {
   statusMessage.value = message;
   statusState.value = state;
 };
@@ -153,16 +171,16 @@ const startScanner = async () => {
   try {
     stopScanner();
     if (!navigator.mediaDevices?.getUserMedia) {
-      setStatus('当前浏览器不支持摄像头访问', 'error');
+      setStatus("当前浏览器不支持摄像头访问", "error");
       return;
     }
 
-    setStatus('请求摄像头权限…', 'info');
+    setStatus("请求摄像头权限…", "info");
     currentStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: { ideal: 'environment' }
+        facingMode: { ideal: "environment" },
       },
-      audio: false
+      audio: false,
     });
     videoEl.value.srcObject = currentStream;
     await videoEl.value.play();
@@ -180,15 +198,15 @@ const startScanner = async () => {
           }
         } else if (err && !(err instanceof NotFoundException)) {
           console.error(err);
-          setStatus('扫描错误：' + err.message, 'error');
+          setStatus("扫描错误：" + err.message, "error");
         }
       }
     );
     scanning.value = true;
-    setStatus('正在扫描…', 'success');
+    setStatus("正在扫描…", "success");
   } catch (err) {
     console.error(err);
-    setStatus(err?.message || '无法启动摄像头', 'error');
+    setStatus(err?.message || "无法启动摄像头", "error");
     stopScanner();
   }
 };
@@ -196,15 +214,15 @@ const startScanner = async () => {
 const createChannel = async () => {
   if (channel.value) return;
   loading.value = true;
-  error.value = '';
+  error.value = "";
   resetStatus();
   try {
     const res = await fetch(`${apiBase}/channels`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ ttl: ttl.value, mode: mode.value })
+      body: JSON.stringify({ ttl: ttl.value, mode: mode.value }),
     });
 
     if (!res.ok) {
@@ -216,12 +234,12 @@ const createChannel = async () => {
       id: data.data?.id ?? data.id,
       secret: data.data?.secret ?? data.secret,
       ttl: data.data?.ttl ?? data.ttl,
-      mode: mode.value
+      mode: mode.value,
     };
     await startScanner();
   } catch (err) {
     console.error(err);
-    error.value = err?.message || '创建频道失败';
+    error.value = err?.message || "创建频道失败";
     stopScanner();
   } finally {
     loading.value = false;
@@ -231,22 +249,22 @@ const createChannel = async () => {
 const pushPayload = async (payload) => {
   if (!channel.value) return;
   if (payload === lastPushed.value) {
-    setStatus('内容未变化，跳过推送', 'info');
+    setStatus("内容未变化，跳过推送", "info");
     return;
   }
 
-  setStatus('推送中…', 'info');
+  setStatus("推送中…", "info");
   try {
     const res = await fetch(`${apiBase}/channels/${channel.value.id}/push`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         secret: channel.value.secret,
         data: payload,
-        type: channel.value.mode
-      })
+        type: channel.value.mode,
+      }),
     });
 
     if (!res.ok) {
@@ -258,10 +276,10 @@ const pushPayload = async (payload) => {
     const newVersion = result.data?.version ?? result.version;
     lastPushed.value = payload;
     version.value = newVersion;
-    setStatus(`推送成功，版本 ${newVersion}`, 'success');
+    setStatus(`推送成功，版本 ${newVersion}`, "success");
   } catch (err) {
     console.error(err);
-    setStatus(err?.message || '推送失败', 'error');
+    setStatus(err?.message || "推送失败", "error");
   }
 };
 
@@ -269,17 +287,20 @@ const copyLink = async () => {
   if (!receiverLink.value) return;
   try {
     await navigator.clipboard.writeText(receiverLink.value);
-    setStatus('接收者链接已复制', 'success');
+    setStatus("接收者链接已复制", "success");
   } catch (err) {
     console.error(err);
-    setStatus('复制失败，请手动复制链接', 'error');
+    setStatus("复制失败，请手动复制链接", "error");
   }
 };
 
-watch(channelCreated, (created) => {
-  if (!created) {
-    stopScanner();
+watch(channelCreated, async (created) => {
+  if (created) {
+    await nextTick();
+    await startScanner();
+    return;
   }
+  stopScanner();
 });
 </script>
 
@@ -424,7 +445,7 @@ watch(channelCreated, (created) => {
 }
 
 .preview--active::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 12%;
   border: 3px solid rgba(94, 234, 212, 0.8);

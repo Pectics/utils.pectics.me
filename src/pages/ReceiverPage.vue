@@ -10,8 +10,12 @@
           <span>频道 ID</span>
           <input class="input" v-model="channelIdInput" placeholder="例如：8 字节 ID" />
         </label>
-        <button class="button" @click="connectChannel" :disabled="!channelIdInput || connecting">
-          {{ connecting ? '连接中…' : activeChannel ? '重新连接' : '连接频道' }}
+        <button
+          class="button"
+          @click="connectChannel"
+          :disabled="!channelIdInput || connecting"
+        >
+          {{ connecting ? "连接中…" : activeChannel ? "重新连接" : "连接频道" }}
         </button>
       </div>
       <p v-if="pollError" class="error">{{ pollError }}</p>
@@ -20,7 +24,7 @@
     <section v-if="activeChannel" class="polling-section">
       <div class="status-banner" :class="{ online: polling, offline: !polling }">
         <span class="indicator"></span>
-        <span>{{ polling ? '轮询进行中' : '已停止轮询' }}</span>
+        <span>{{ polling ? "轮询进行中" : "已停止轮询" }}</span>
         <span v-if="lastUpdated" class="timestamp">最近更新：{{ lastUpdated }}</span>
       </div>
       <div class="payload-grid">
@@ -28,7 +32,11 @@
           <h3>最新原始数据</h3>
           <div class="payload-content" v-if="latestPayload">
             <code>{{ latestPayload.data }}</code>
-            <span class="payload-meta">类型：{{ latestPayload.type }} · 时间：{{ formatTime(latestPayload.ts) }}</span>
+            <span class="payload-meta"
+              >类型：{{ latestPayload.type }} · 时间：{{
+                formatTime(latestPayload.ts)
+              }}</span
+            >
           </div>
           <div class="placeholder" v-else>暂未收到任何数据</div>
         </div>
@@ -45,67 +53,70 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import QRCode from 'qrcode';
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import QRCode from "qrcode";
 
-const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const apiBase = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 const POLL_DELAY = 2000;
 
-const channelIdInput = ref('');
-const activeChannel = ref('');
+const channelIdInput = ref("");
+const activeChannel = ref("");
 const since = ref(0);
 const polling = ref(false);
 const connecting = ref(false);
-const pollError = ref('');
+const pollError = ref("");
 const latestPayload = ref(null);
-const qrImage = ref('');
-const lastUpdated = ref('');
+const qrImage = ref("");
+const lastUpdated = ref("");
 let stop = false;
 let timer = null;
 
 const formatTime = (ts) => {
-  if (!ts) return '未知';
+  if (!ts) return "未知";
   const date = new Date(ts);
-  if (Number.isNaN(date.getTime())) return '未知';
+  if (Number.isNaN(date.getTime())) return "未知";
   return date.toLocaleString();
 };
 
 const syncQr = async () => {
   if (!latestPayload.value?.data) {
-    qrImage.value = '';
+    qrImage.value = "";
     return;
   }
   try {
     qrImage.value = await QRCode.toDataURL(latestPayload.value.data, {
-      errorCorrectionLevel: 'M',
+      errorCorrectionLevel: "M",
       width: 280,
-      margin: 1
+      margin: 1,
     });
   } catch (err) {
     console.error(err);
-    qrImage.value = '';
+    qrImage.value = "";
   }
 };
 
 watch(latestPayload, (val) => {
   syncQr();
-  lastUpdated.value = val ? new Date().toLocaleTimeString() : '';
+  lastUpdated.value = val ? new Date().toLocaleTimeString() : "";
 });
 
 const pollOnce = async () => {
   if (!activeChannel.value) return;
   try {
-    const res = await fetch(`${apiBase}/channels/${activeChannel.value}/poll?since=${since.value}`, {
-      method: 'GET'
-    });
+    const res = await fetch(
+      `${apiBase}/channels/${activeChannel.value}/poll?since=${since.value}`,
+      {
+        method: "GET",
+      }
+    );
 
     if (!res.ok) {
       const errorBody = await res.json().catch(() => ({}));
       if (res.status === 404) {
-        throw new Error('频道不存在或已删除');
+        throw new Error("频道不存在或已删除");
       }
       if (res.status === 410) {
-        throw new Error('频道已过期，请重新获取链接');
+        throw new Error("频道已过期，请重新获取链接");
       }
       throw new Error(errorBody.message || `轮询失败：${res.status}`);
     }
@@ -119,9 +130,9 @@ const pollOnce = async () => {
     if (updated && payload) {
       latestPayload.value = payload;
     }
-    pollError.value = '';
+    pollError.value = "";
   } catch (err) {
-    pollError.value = err?.message || '轮询失败';
+    pollError.value = err?.message || "轮询失败";
     polling.value = false;
     stop = true;
   }
@@ -138,10 +149,10 @@ const schedulePoll = async () => {
 const connectChannel = async () => {
   if (!channelIdInput.value) return;
   connecting.value = true;
-  pollError.value = '';
+  pollError.value = "";
   stopPolling();
   latestPayload.value = null;
-  qrImage.value = '';
+  qrImage.value = "";
   since.value = 0;
   try {
     activeChannel.value = channelIdInput.value.trim();
@@ -170,9 +181,9 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
-  const id = url.searchParams.get('id');
+  const id = url.searchParams.get("id");
   if (id) {
     channelIdInput.value = id;
     connectChannel();
